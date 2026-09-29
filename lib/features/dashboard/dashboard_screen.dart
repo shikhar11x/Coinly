@@ -4,9 +4,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../../core/nav.dart';
 import '../../core/theme.dart';
 import '../accounts/accounts_providers.dart';
 import '../auth/auth_providers.dart';
+import '../transactions/txn_models.dart';
+import '../transactions/txn_providers.dart';
+import '../transactions/txn_tile.dart';
 
 // Indian-style formatting: ₹2,36,310
 final _money = NumberFormat.currency(
@@ -22,7 +26,7 @@ String _greeting() {
   return 'Good evening';
 }
 
-// ---------- Sample data (replaced by Supabase data later) ----------
+// ---------- Sample data (replaced in Step 6) ----------
 const _sampleCategories = [
   ('Transport', 19087.0, Color(0xFF26A69A)),
   ('Groceries', 16457.0, Color(0xFF66BB6A)),
@@ -30,19 +34,6 @@ const _sampleCategories = [
   ('Entertainment', 14602.0, Color(0xFFFF7043)),
   ('Utilities', 11538.0, Color(0xFF42A5F5)),
   ('Shopping', 10280.0, Color(0xFFAB47BC)),
-];
-
-const _sampleTransactions = [
-  (
-    'Swiggy order',
-    'Food & Dining',
-    -450.0,
-    Icons.restaurant,
-    Color(0xFFEF5350),
-  ),
-  ('Salary', 'Income', 55000.0, Icons.payments, Color(0xFF2E7D32)),
-  ('Uber ride', 'Transport', -220.0, Icons.directions_car, Color(0xFF26A69A)),
-  ('BigBasket', 'Groceries', -1840.0, Icons.shopping_cart, Color(0xFF66BB6A)),
 ];
 
 class DashboardScreen extends StatelessWidget {
@@ -95,6 +86,9 @@ class _Header extends ConsumerWidget {
 
     // Real total of all accounts (null while loading).
     final total = ref.watch(totalBalanceProvider);
+
+    // Real income / expense for this month (null while loading).
+    final summary = ref.watch(monthSummaryProvider);
 
     return Container(
       padding: EdgeInsets.fromLTRB(20, top + 16, 20, 20),
@@ -181,19 +175,24 @@ class _Header extends ConsumerWidget {
           ),
           const SizedBox(height: 8),
 
-          // Income / expense this month (sample until Step 5)
+          // Income / expense this month
           Row(
             children: [
               _MiniStat(
                 icon: Icons.arrow_upward,
                 color: AppColors.green,
-                value: _money.format(34525),
+                value: _money.format(summary?.income ?? 0),
               ),
               const SizedBox(width: 16),
               _MiniStat(
                 icon: Icons.arrow_downward,
                 color: AppColors.red,
-                value: _money.format(91315),
+                value: _money.format(summary?.expense ?? 0),
+              ),
+              const SizedBox(width: 8),
+              const Text(
+                'this month',
+                style: TextStyle(color: Colors.white38, fontSize: 11),
               ),
             ],
           ),
@@ -225,7 +224,7 @@ class _Header extends ConsumerWidget {
                   icon: Icons.add,
                   label: 'Add Manually',
                   color: AppColors.green,
-                  onTap: () {}, // Step 5
+                  onTap: () => context.push('/transaction'),
                 ),
               ],
             ),
@@ -503,11 +502,14 @@ class _BreakdownCard extends StatelessWidget {
 }
 
 // ======================= RECENT TRANSACTIONS =======================
-class _RecentTransactions extends StatelessWidget {
+class _RecentTransactions extends ConsumerWidget {
   const _RecentTransactions();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final async = ref.watch(transactionsProvider);
+    final recent = (async.value ?? const <Txn>[]).take(5).toList();
+
     return _Card(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -519,39 +521,49 @@ class _RecentTransactions extends StatelessWidget {
                 style: TextStyle(fontWeight: FontWeight.w700),
               ),
               const Spacer(),
-              Text(
-                'See all',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Theme.of(context).colorScheme.primary,
+              InkWell(
+                onTap: () => ref.read(tabIndexProvider.notifier).set(1),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: Text(
+                    'See all',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                  ),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 8),
-          for (final t in _sampleTransactions)
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: CircleAvatar(
-                backgroundColor: t.$5.withValues(alpha: 0.15),
-                child: Icon(t.$4, color: t.$5, size: 20),
+          if (recent.isEmpty && async.isLoading)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 24),
+              child: Center(child: CircularProgressIndicator()),
+            )
+          else if (recent.isEmpty && async.hasError)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 16),
+              child: Text(
+                'Could not load transactions.',
+                style: TextStyle(color: Colors.black54),
               ),
-              title: Text(
-                t.$1,
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                ),
+            )
+          else if (recent.isEmpty)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 16),
+              child: Text(
+                'No transactions yet. Tap + to add your first one.',
+                style: TextStyle(color: Colors.black54),
               ),
-              subtitle: Text(t.$2, style: const TextStyle(fontSize: 12)),
-              trailing: Text(
-                '${t.$3 > 0 ? '+' : '-'}${_money.format(t.$3.abs())}',
-                style: TextStyle(
-                  fontWeight: FontWeight.w700,
-                  color: t.$3 > 0 ? AppColors.green : AppColors.red,
-                ),
+            )
+          else
+            for (final t in recent)
+              TxnTile(
+                txn: t,
+                onTap: () => context.push('/transaction', extra: t),
               ),
-            ),
         ],
       ),
     );

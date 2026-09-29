@@ -1,31 +1,28 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import '../../core/nav.dart';
 import '../../core/theme.dart';
 import '../dashboard/dashboard_screen.dart';
 import '../profile/profile_screen.dart';
+import '../transactions/transactions_screen.dart';
 
-class AppShell extends StatefulWidget {
+class AppShell extends ConsumerWidget {
   const AppShell({super.key});
 
-  @override
-  State<AppShell> createState() => _AppShellState();
-}
-
-class _AppShellState extends State<AppShell> {
-  int _index = 0;
-
-  // Placeholder pages; we replace these in later steps.
+  // Placeholder for the AI assistant; we replace it in a later step.
   static const _pages = <Widget>[
     DashboardScreen(),
-    Center(child: Text('Transactions')),
+    TransactionsScreen(),
     Center(child: Text('AI Assistant')),
     ProfileScreen(),
   ];
 
-  void _showAddSheet() {
+  void _showAddSheet(BuildContext context) {
     showModalBottomSheet(
       context: context,
       showDragHandle: true,
-      builder: (_) => SafeArea(
+      builder: (sheetContext) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -33,17 +30,20 @@ class _AppShellState extends State<AppShell> {
               leading: const Icon(Icons.document_scanner_outlined,
                   color: AppColors.blue),
               title: const Text('Scan receipt with AI'),
-              onTap: () => Navigator.pop(context), // Step 7
+              onTap: () => Navigator.pop(sheetContext), // Step 7
             ),
             ListTile(
               leading: const Icon(Icons.mic_none, color: AppColors.red),
               title: const Text('Voice entry'),
-              onTap: () => Navigator.pop(context), // Step 8
+              onTap: () => Navigator.pop(sheetContext), // Step 8
             ),
             ListTile(
               leading: const Icon(Icons.add, color: AppColors.green),
               title: const Text('Add manually'),
-              onTap: () => Navigator.pop(context), // Step 5
+              onTap: () {
+                Navigator.pop(sheetContext);
+                context.push('/transaction');
+              },
             ),
           ],
         ),
@@ -52,10 +52,13 @@ class _AppShellState extends State<AppShell> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final index = ref.watch(tabIndexProvider);
+    void go(int i) => ref.read(tabIndexProvider.notifier).set(i);
+
     return Scaffold(
       extendBody: true, // lets page content scroll under the floating bar
-      body: IndexedStack(index: _index, children: _pages),
+      body: IndexedStack(index: index, children: _pages),
       bottomNavigationBar: SafeArea(
         child: Container(
           margin: const EdgeInsets.fromLTRB(20, 0, 20, 12),
@@ -77,18 +80,18 @@ class _AppShellState extends State<AppShell> {
               _NavItem(
                 icon: Icons.home_rounded,
                 label: 'Home',
-                selected: _index == 0,
-                onTap: () => setState(() => _index = 0),
+                selected: index == 0,
+                onTap: () => go(0),
               ),
               _NavItem(
                 icon: Icons.receipt_long_rounded,
                 label: 'Transactions',
-                selected: _index == 1,
-                onTap: () => setState(() => _index = 1),
+                selected: index == 1,
+                onTap: () => go(1),
               ),
               // Center Add button
               GestureDetector(
-                onTap: _showAddSheet,
+                onTap: () => _showAddSheet(context),
                 child: Container(
                   width: 52,
                   height: 52,
@@ -102,14 +105,14 @@ class _AppShellState extends State<AppShell> {
               _NavItem(
                 icon: Icons.auto_awesome,
                 label: 'Assistant',
-                selected: _index == 2,
-                onTap: () => setState(() => _index = 2),
+                selected: index == 2,
+                onTap: () => go(2),
               ),
               _NavItem(
                 icon: Icons.person_rounded,
                 label: 'Profile',
-                selected: _index == 3,
-                onTap: () => setState(() => _index = 3),
+                selected: index == 3,
+                onTap: () => go(3),
               ),
             ],
           ),

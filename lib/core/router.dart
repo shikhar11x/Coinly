@@ -1,14 +1,14 @@
 import 'dart:async';
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-
-import '../features/accounts/accounts_screen.dart';
 import 'supabase.dart';
+import '../features/accounts/accounts_screen.dart';
 import '../features/auth/auth_screen.dart';
 import '../features/shell/app_shell.dart';
+import '../features/transactions/txn_form_screen.dart';
+import '../features/transactions/txn_models.dart';
 
 /// Lets GoRouter re-check redirects whenever login state changes.
 class _AuthRefresh extends ChangeNotifier {
@@ -47,6 +47,12 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/accounts',
         builder: (context, state) => const AccountsScreen(),
+      ),
+      GoRoute(
+        path: '/transaction',
+        // extra == null -> new transaction, extra is a Txn -> edit it
+        builder: (context, state) =>
+            TxnFormScreen(existing: state.extra as Txn?),
       ),
     ],
   );
