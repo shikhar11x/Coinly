@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../core/theme.dart';
 import '../dashboard/dashboard_screen.dart';
+import '../profile/profile_screen.dart';
 
 class AppShell extends StatefulWidget {
   const AppShell({super.key});
@@ -17,7 +18,7 @@ class _AppShellState extends State<AppShell> {
     DashboardScreen(),
     Center(child: Text('Transactions')),
     Center(child: Text('AI Assistant')),
-    Center(child: Text('Profile')),
+    ProfileScreen(),
   ];
 
   void _showAddSheet() {

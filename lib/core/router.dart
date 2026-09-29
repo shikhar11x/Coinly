@@ -1,15 +1,46 @@
+import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'supabase.dart';
+import '../features/auth/auth_screen.dart';
 import '../features/shell/app_shell.dart';
 
+/// Lets GoRouter re-check redirects whenever login state changes.
+class _AuthRefresh extends ChangeNotifier {
+  _AuthRefresh(Stream<AuthState> stream) {
+    _sub = stream.listen((_) => notifyListeners());
+  }
+
+  late final StreamSubscription<AuthState> _sub;
+
+  @override
+  void dispose() {
+    _sub.cancel();
+    super.dispose();
+  }
+}
+
 final routerProvider = Provider<GoRouter>((ref) {
+  final client = ref.watch(supabaseProvider);
+  final refresh = _AuthRefresh(client.auth.onAuthStateChange);
+  ref.onDispose(refresh.dispose);
+
   return GoRouter(
     initialLocation: '/',
+    refreshListenable: refresh,
+    redirect: (context, state) {
+      final loggedIn = client.auth.currentSession != null;
+      final onLogin = state.matchedLocation == '/login';
+
+      if (!loggedIn && !onLogin) return '/login';
+      if (loggedIn && onLogin) return '/';
+      return null; // no redirect
+    },
     routes: [
-      GoRoute(
-        path: '/',
-        builder: (context, state) => const AppShell(),
-      ),
+      GoRoute(path: '/', builder: (context, state) => const AppShell()),
+      GoRoute(path: '/login', builder: (context, state) => const AuthScreen()),
     ],
   );
 });

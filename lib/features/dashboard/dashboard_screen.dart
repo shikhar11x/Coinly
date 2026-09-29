@@ -1,7 +1,9 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../core/theme.dart';
+import '../auth/auth_providers.dart';
 
 // Indian-style formatting: ₹2,36,310
 final _money = NumberFormat.currency(
@@ -9,6 +11,13 @@ final _money = NumberFormat.currency(
   symbol: '₹',
   decimalDigits: 0,
 );
+
+String _greeting() {
+  final h = DateTime.now().hour;
+  if (h < 12) return 'Good morning';
+  if (h < 17) return 'Good afternoon';
+  return 'Good evening';
+}
 
 // ---------- Sample data (replaced by Supabase data later) ----------
 const _sampleCategories = [
@@ -59,12 +68,19 @@ class DashboardScreen extends StatelessWidget {
 }
 
 // ======================= HEADER =======================
-class _Header extends StatelessWidget {
+class _Header extends ConsumerWidget {
   const _Header();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final top = MediaQuery.of(context).padding.top;
+
+    // Real name from the `profiles` table (empty while loading).
+    final fullName = ref.watch(profileProvider).maybeWhen(
+          data: (p) => (p?['name'] as String?) ?? '',
+          orElse: () => '',
+        );
+    final firstName = fullName.trim().split(' ').first;
 
     return Container(
       padding: EdgeInsets.fromLTRB(20, top + 16, 20, 20),
@@ -92,13 +108,14 @@ class _Header extends StatelessWidget {
                 ),
               ),
               const Spacer(),
-              const Column(
+              Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  Text('Good afternoon',
-                      style: TextStyle(color: Colors.white54, fontSize: 11)),
-                  Text('Piyush',
-                      style: TextStyle(
+                  Text(_greeting(),
+                      style: const TextStyle(
+                          color: Colors.white54, fontSize: 11)),
+                  Text(firstName.isEmpty ? 'there' : firstName,
+                      style: const TextStyle(
                           color: Colors.white,
                           fontSize: 14,
                           fontWeight: FontWeight.w600)),
@@ -447,7 +464,8 @@ class _RecentTransactions extends StatelessWidget {
               const Spacer(),
               Text('See all',
                   style: TextStyle(
-                      fontSize: 12, color: Theme.of(context).colorScheme.primary)),
+                      fontSize: 12,
+                      color: Theme.of(context).colorScheme.primary)),
             ],
           ),
           const SizedBox(height: 8),
