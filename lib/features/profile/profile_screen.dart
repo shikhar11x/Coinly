@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import '../../core/supabase.dart';
 import '../../core/theme.dart';
 import '../auth/auth_providers.dart';
+
+import 'package:go_router/go_router.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -49,7 +52,15 @@ class ProfileScreen extends ConsumerWidget {
                 ),
               ),
             ),
-            const SizedBox(height: 100), // space above floating nav bar
+            const SizedBox(height: 24),
+            ListTile(
+              leading: const Icon(Icons.account_balance_wallet_outlined),
+              title: const Text('My accounts'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => context.push('/accounts'),
+            ),
+            const SizedBox(height: 100),
+            // space above floating nav bar
           ],
         ),
       ),

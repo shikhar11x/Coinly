@@ -1,8 +1,11 @@
 import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+
+import '../features/accounts/accounts_screen.dart';
 import 'supabase.dart';
 import '../features/auth/auth_screen.dart';
 import '../features/shell/app_shell.dart';
@@ -41,6 +44,10 @@ final routerProvider = Provider<GoRouter>((ref) {
     routes: [
       GoRoute(path: '/', builder: (context, state) => const AppShell()),
       GoRoute(path: '/login', builder: (context, state) => const AuthScreen()),
+      GoRoute(
+        path: '/accounts',
+        builder: (context, state) => const AccountsScreen(),
+      ),
     ],
   );
 });

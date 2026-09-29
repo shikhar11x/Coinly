@@ -1,8 +1,11 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+
 import '../../core/theme.dart';
+import '../accounts/accounts_providers.dart';
 import '../auth/auth_providers.dart';
 
 // Indian-style formatting: ₹2,36,310
@@ -30,7 +33,13 @@ const _sampleCategories = [
 ];
 
 const _sampleTransactions = [
-  ('Swiggy order', 'Food & Dining', -450.0, Icons.restaurant, Color(0xFFEF5350)),
+  (
+    'Swiggy order',
+    'Food & Dining',
+    -450.0,
+    Icons.restaurant,
+    Color(0xFFEF5350),
+  ),
   ('Salary', 'Income', 55000.0, Icons.payments, Color(0xFF2E7D32)),
   ('Uber ride', 'Transport', -220.0, Icons.directions_car, Color(0xFF26A69A)),
   ('BigBasket', 'Groceries', -1840.0, Icons.shopping_cart, Color(0xFF66BB6A)),
@@ -76,11 +85,16 @@ class _Header extends ConsumerWidget {
     final top = MediaQuery.of(context).padding.top;
 
     // Real name from the `profiles` table (empty while loading).
-    final fullName = ref.watch(profileProvider).maybeWhen(
+    final fullName = ref
+        .watch(profileProvider)
+        .maybeWhen(
           data: (p) => (p?['name'] as String?) ?? '',
           orElse: () => '',
         );
     final firstName = fullName.trim().split(' ').first;
+
+    // Real total of all accounts (null while loading).
+    final total = ref.watch(totalBalanceProvider);
 
     return Container(
       padding: EdgeInsets.fromLTRB(20, top + 16, 20, 20),
@@ -111,14 +125,18 @@ class _Header extends ConsumerWidget {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  Text(_greeting(),
-                      style: const TextStyle(
-                          color: Colors.white54, fontSize: 11)),
-                  Text(firstName.isEmpty ? 'there' : firstName,
-                      style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600)),
+                  Text(
+                    _greeting(),
+                    style: const TextStyle(color: Colors.white54, fontSize: 11),
+                  ),
+                  Text(
+                    firstName.isEmpty ? 'there' : firstName,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                 ],
               ),
               const SizedBox(width: 10),
@@ -131,22 +149,39 @@ class _Header extends ConsumerWidget {
           ),
           const SizedBox(height: 24),
 
-          // Total balance
-          const Text('Total balance',
-              style: TextStyle(color: Colors.white54, fontSize: 12)),
-          const SizedBox(height: 4),
-          Text(
-            _money.format(236310),
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 36,
-              fontWeight: FontWeight.w700,
-              letterSpacing: -1,
+          // Total balance (tap to manage accounts)
+          GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () => context.push('/accounts'),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Row(
+                  children: [
+                    Text(
+                      'Total balance',
+                      style: TextStyle(color: Colors.white54, fontSize: 12),
+                    ),
+                    SizedBox(width: 2),
+                    Icon(Icons.chevron_right, color: Colors.white54, size: 16),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  total == null ? '—' : _money.format(total),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 36,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -1,
+                  ),
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 8),
 
-          // Income / expense this month
+          // Income / expense this month (sample until Step 5)
           Row(
             children: [
               _MiniStat(
@@ -218,9 +253,14 @@ class _MiniStat extends StatelessWidget {
       children: [
         Icon(icon, color: color, size: 14),
         const SizedBox(width: 4),
-        Text(value,
-            style: TextStyle(
-                color: color, fontSize: 13, fontWeight: FontWeight.w600)),
+        Text(
+          value,
+          style: TextStyle(
+            color: color,
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
       ],
     );
   }
@@ -258,8 +298,10 @@ class _QuickAction extends StatelessWidget {
               child: Icon(icon, color: color, size: 22),
             ),
             const SizedBox(height: 6),
-            Text(label,
-                style: const TextStyle(color: Colors.white70, fontSize: 11)),
+            Text(
+              label,
+              style: const TextStyle(color: Colors.white70, fontSize: 11),
+            ),
           ],
         ),
       ),
@@ -313,8 +355,10 @@ class _AskAiBar extends StatelessWidget {
               Icon(Icons.auto_awesome, color: AppColors.purple, size: 18),
               SizedBox(width: 10),
               Expanded(
-                child: Text('Ask AI anything about your money',
-                    style: TextStyle(color: Colors.black54, fontSize: 13)),
+                child: Text(
+                  'Ask AI anything about your money',
+                  style: TextStyle(color: Colors.black54, fontSize: 13),
+                ),
               ),
               Icon(Icons.chevron_right, color: Colors.black38),
             ],
@@ -338,8 +382,8 @@ class _BudgetCard extends StatelessWidget {
     final color = ratio < 0.8
         ? AppColors.green
         : ratio < 1.0
-            ? AppColors.orange
-            : AppColors.red;
+        ? AppColors.orange
+        : AppColors.red;
 
     return _Card(
       child: Column(
@@ -347,8 +391,10 @@ class _BudgetCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Text('Monthly budget',
-                  style: TextStyle(fontWeight: FontWeight.w700)),
+              const Text(
+                'Monthly budget',
+                style: TextStyle(fontWeight: FontWeight.w700),
+              ),
               const Spacer(),
               const Icon(Icons.edit_outlined, size: 16, color: Colors.black38),
             ],
@@ -385,8 +431,10 @@ class _BreakdownCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Expense breakdown (this month)',
-              style: TextStyle(fontWeight: FontWeight.w700)),
+          const Text(
+            'Expense breakdown (this month)',
+            style: TextStyle(fontWeight: FontWeight.w700),
+          ),
           const SizedBox(height: 16),
           Row(
             children: [
@@ -422,17 +470,24 @@ class _BreakdownCard extends StatelessWidget {
                               width: 8,
                               height: 8,
                               decoration: BoxDecoration(
-                                  color: c.$3, shape: BoxShape.circle),
+                                color: c.$3,
+                                shape: BoxShape.circle,
+                              ),
                             ),
                             const SizedBox(width: 8),
                             Expanded(
-                              child: Text(c.$1,
-                                  style: const TextStyle(fontSize: 12)),
+                              child: Text(
+                                c.$1,
+                                style: const TextStyle(fontSize: 12),
+                              ),
                             ),
-                            Text(_money.format(c.$2),
-                                style: const TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600)),
+                            Text(
+                              _money.format(c.$2),
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
                           ],
                         ),
                       ),
@@ -459,13 +514,18 @@ class _RecentTransactions extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Text('Recent transactions',
-                  style: TextStyle(fontWeight: FontWeight.w700)),
+              const Text(
+                'Recent transactions',
+                style: TextStyle(fontWeight: FontWeight.w700),
+              ),
               const Spacer(),
-              Text('See all',
-                  style: TextStyle(
-                      fontSize: 12,
-                      color: Theme.of(context).colorScheme.primary)),
+              Text(
+                'See all',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 8),
@@ -476,9 +536,13 @@ class _RecentTransactions extends StatelessWidget {
                 backgroundColor: t.$5.withValues(alpha: 0.15),
                 child: Icon(t.$4, color: t.$5, size: 20),
               ),
-              title: Text(t.$1,
-                  style: const TextStyle(
-                      fontSize: 14, fontWeight: FontWeight.w600)),
+              title: Text(
+                t.$1,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
               subtitle: Text(t.$2, style: const TextStyle(fontSize: 12)),
               trailing: Text(
                 '${t.$3 > 0 ? '+' : '-'}${_money.format(t.$3.abs())}',
