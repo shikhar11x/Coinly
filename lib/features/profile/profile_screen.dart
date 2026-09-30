@@ -59,6 +59,12 @@ class ProfileScreen extends ConsumerWidget {
               trailing: const Icon(Icons.chevron_right),
               onTap: () => context.push('/accounts'),
             ),
+            ListTile(
+              leading: const Icon(Icons.pie_chart_outline),
+              title: const Text('Budgets'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => context.push('/budgets'),
+            ),
             const SizedBox(height: 100),
             // space above floating nav bar
           ],

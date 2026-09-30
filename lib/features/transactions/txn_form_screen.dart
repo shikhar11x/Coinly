@@ -6,12 +6,18 @@ import '../../core/theme.dart';
 import '../../core/ui_helpers.dart';
 import '../accounts/account.dart';
 import '../accounts/accounts_providers.dart';
+import 'txn_draft.dart';
 import 'txn_models.dart';
 import 'txn_providers.dart';
 
 class TxnFormScreen extends ConsumerStatefulWidget {
-  const TxnFormScreen({super.key, this.existing});
+  const TxnFormScreen({super.key, this.existing, this.draft});
+
+  /// Editing this transaction (null = adding a new one).
   final Txn? existing;
+
+  /// Pre-filled values from AI receipt scan or voice entry.
+  final TxnDraft? draft;
 
   @override
   ConsumerState<TxnFormScreen> createState() => _TxnFormScreenState();
@@ -20,16 +26,23 @@ class TxnFormScreen extends ConsumerStatefulWidget {
 class _TxnFormScreenState extends ConsumerState<TxnFormScreen> {
   final _formKey = GlobalKey<FormState>();
 
-  late final _amount = TextEditingController(
-    text: widget.existing == null ? '' : _plain(widget.existing!.amount),
-  );
-  late final _desc =
-      TextEditingController(text: widget.existing?.description ?? '');
+  late final double? _startAmount =
+      widget.existing?.amount ?? widget.draft?.amount;
 
-  late TxnType _type = widget.existing?.type ?? TxnType.expense;
-  late String? _categoryId = widget.existing?.categoryId;
+  late final _amount = TextEditingController(
+    text: _startAmount == null ? '' : _plain(_startAmount!),
+  );
+  late final _desc = TextEditingController(
+    text: widget.existing?.description ?? widget.draft?.description ?? '',
+  );
+
+  late TxnType _type =
+      widget.existing?.type ?? widget.draft?.type ?? TxnType.expense;
+  late String? _categoryId =
+      widget.existing?.categoryId ?? widget.draft?.categoryId;
   late String? _accountId = widget.existing?.accountId;
-  late DateTime _date = widget.existing?.date ?? DateTime.now();
+  late DateTime _date =
+      widget.existing?.date ?? widget.draft?.date ?? DateTime.now();
   bool _saving = false;
 
   bool get _isEdit => widget.existing != null;
@@ -65,8 +78,13 @@ class _TxnFormScreenState extends ConsumerState<TxnFormScreen> {
     if (picked == null) return;
     // Change the day but keep the time of day.
     setState(() {
-      _date = DateTime(picked.year, picked.month, picked.day, _date.hour,
-          _date.minute);
+      _date = DateTime(
+        picked.year,
+        picked.month,
+        picked.day,
+        _date.hour,
+        _date.minute,
+      );
     });
   }
 
@@ -108,6 +126,8 @@ class _TxnFormScreenState extends ConsumerState<TxnFormScreen> {
           categoryId: _categoryId!,
           date: _date,
           description: _desc.text,
+          inputMethod: widget.draft?.inputMethod ?? 'manual',
+          voiceTranscript: widget.draft?.voiceTranscript,
         );
       }
       if (mounted) context.pop();
@@ -157,8 +177,9 @@ class _TxnFormScreenState extends ConsumerState<TxnFormScreen> {
     final accountId = _accountId ?? _defaultAccount(accounts)?.id;
 
     final allCategories = ref.watch(categoriesProvider).value;
-    final categories =
-        (allCategories ?? const <TxnCategory>[]).where((c) => c.type == _type);
+    final categories = (allCategories ?? const <TxnCategory>[]).where(
+      (c) => c.type == _type,
+    );
 
     return Scaffold(
       backgroundColor: AppColors.bg,
@@ -180,6 +201,37 @@ class _TxnFormScreenState extends ConsumerState<TxnFormScreen> {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
           children: [
+            // Banner shown when values came from AI
+            if (widget.draft != null && !_isEdit) ...[
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.blue.withValues(alpha: 0.10),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(
+                      Icons.auto_awesome,
+                      size: 18,
+                      color: AppColors.blue,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        widget.draft!.amount == null
+                            ? "AI couldn't read the total. Please enter the amount."
+                            : 'Filled in by AI. Please check the details before saving.',
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
+
             // Income / Expense switch
             SegmentedButton<TxnType>(
               segments: const [
@@ -205,8 +257,10 @@ class _TxnFormScreenState extends ConsumerState<TxnFormScreen> {
             // Amount
             TextFormField(
               controller: _amount,
-              autofocus: !_isEdit,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              autofocus: !_isEdit && _startAmount == null,
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
               style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w700),
               decoration: const InputDecoration(
                 labelText: 'Amount',

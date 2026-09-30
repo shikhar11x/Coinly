@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+
 import '../../core/nav.dart';
 import '../../core/theme.dart';
 import '../dashboard/dashboard_screen.dart';
 import '../profile/profile_screen.dart';
+import '../receipt/scan_flow.dart';
 import '../transactions/transactions_screen.dart';
+import '../voice/voice_flow.dart';
 
 class AppShell extends ConsumerWidget {
   const AppShell({super.key});
@@ -18,7 +21,7 @@ class AppShell extends ConsumerWidget {
     ProfileScreen(),
   ];
 
-  void _showAddSheet(BuildContext context) {
+  void _showAddSheet(BuildContext context, WidgetRef ref) {
     showModalBottomSheet(
       context: context,
       showDragHandle: true,
@@ -27,15 +30,23 @@ class AppShell extends ConsumerWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              leading: const Icon(Icons.document_scanner_outlined,
-                  color: AppColors.blue),
+              leading: const Icon(
+                Icons.document_scanner_outlined,
+                color: AppColors.blue,
+              ),
               title: const Text('Scan receipt with AI'),
-              onTap: () => Navigator.pop(sheetContext), // Step 7
+              onTap: () {
+                Navigator.pop(sheetContext);
+                startReceiptScan(context, ref);
+              },
             ),
             ListTile(
               leading: const Icon(Icons.mic_none, color: AppColors.red),
               title: const Text('Voice entry'),
-              onTap: () => Navigator.pop(sheetContext), // Step 8
+              onTap: () {
+                Navigator.pop(sheetContext);
+                startVoiceEntry(context, ref);
+              },
             ),
             ListTile(
               leading: const Icon(Icons.add, color: AppColors.green),
@@ -91,7 +102,7 @@ class AppShell extends ConsumerWidget {
               ),
               // Center Add button
               GestureDetector(
-                onTap: () => _showAddSheet(context),
+                onTap: () => _showAddSheet(context, ref),
                 child: Container(
                   width: 52,
                   height: 52,

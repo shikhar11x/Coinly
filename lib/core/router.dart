@@ -6,7 +6,9 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'supabase.dart';
 import '../features/accounts/accounts_screen.dart';
 import '../features/auth/auth_screen.dart';
+import '../features/budgets/budgets_screen.dart';
 import '../features/shell/app_shell.dart';
+import '../features/transactions/txn_draft.dart';
 import '../features/transactions/txn_form_screen.dart';
 import '../features/transactions/txn_models.dart';
 
@@ -49,10 +51,19 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const AccountsScreen(),
       ),
       GoRoute(
+        path: '/budgets',
+        builder: (context, state) => const BudgetsScreen(),
+      ),
+      GoRoute(
         path: '/transaction',
-        // extra == null -> new transaction, extra is a Txn -> edit it
-        builder: (context, state) =>
-            TxnFormScreen(existing: state.extra as Txn?),
+        // extra: null = new, Txn = edit it, TxnDraft = new but pre-filled
+        builder: (context, state) {
+          final extra = state.extra;
+          return TxnFormScreen(
+            existing: extra is Txn ? extra : null,
+            draft: extra is TxnDraft ? extra : null,
+          );
+        },
       ),
     ],
   );

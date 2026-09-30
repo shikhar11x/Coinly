@@ -4,10 +4,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../voice/voice_flow.dart';
+import '../receipt/scan_flow.dart';
 import '../../core/nav.dart';
 import '../../core/theme.dart';
 import '../accounts/accounts_providers.dart';
 import '../auth/auth_providers.dart';
+import '../budgets/budget_providers.dart';
+import '../budgets/budget_sheet.dart';
 import '../transactions/txn_models.dart';
 import '../transactions/txn_providers.dart';
 import '../transactions/txn_tile.dart';
@@ -26,16 +30,6 @@ String _greeting() {
   return 'Good evening';
 }
 
-// ---------- Sample data (replaced in Step 6) ----------
-const _sampleCategories = [
-  ('Transport', 19087.0, Color(0xFF26A69A)),
-  ('Groceries', 16457.0, Color(0xFF66BB6A)),
-  ('Food & Dining', 14841.0, Color(0xFFEF5350)),
-  ('Entertainment', 14602.0, Color(0xFFFF7043)),
-  ('Utilities', 11538.0, Color(0xFF42A5F5)),
-  ('Shopping', 10280.0, Color(0xFFAB47BC)),
-];
-
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
 
@@ -53,7 +47,7 @@ class DashboardScreen extends StatelessWidget {
               children: const [
                 _AskAiBar(),
                 SizedBox(height: 16),
-                _BudgetCard(spent: 64320, budget: 80000),
+                _BudgetCard(),
                 SizedBox(height: 16),
                 _BreakdownCard(),
                 SizedBox(height: 16),
@@ -212,13 +206,13 @@ class _Header extends ConsumerWidget {
                   icon: Icons.document_scanner_outlined,
                   label: 'AI Receipt Scan',
                   color: AppColors.blue,
-                  onTap: () {}, // Step 7
+                  onTap: () => startReceiptScan(context, ref),
                 ),
                 _QuickAction(
                   icon: Icons.mic_none,
                   label: 'Voice Entry',
                   color: AppColors.red,
-                  onTap: () {}, // Step 8
+                  onTap: () => startVoiceEntry(context, ref),
                 ),
                 _QuickAction(
                   icon: Icons.add,
@@ -369,20 +363,83 @@ class _AskAiBar extends StatelessWidget {
 }
 
 // ======================= BUDGET CARD =======================
-class _BudgetCard extends StatelessWidget {
-  const _BudgetCard({required this.spent, required this.budget});
-  final double spent;
-  final double budget;
+class _BudgetCard extends ConsumerWidget {
+  const _BudgetCard();
 
   @override
-  Widget build(BuildContext context) {
-    final ratio = (spent / budget).clamp(0.0, 1.0);
-    // Green until 80%, orange until 100%, then red.
-    final color = ratio < 0.8
-        ? AppColors.green
-        : ratio < 1.0
-        ? AppColors.orange
-        : AppColors.red;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final budgetsAsync = ref.watch(budgetsProvider);
+    final overall = ref.watch(overallBudgetProvider);
+    final spent = ref.watch(monthSummaryProvider)?.expense ?? 0;
+
+    void edit() =>
+        showBudgetSheet(context, title: 'Monthly budget', existing: overall);
+
+    Widget content;
+
+    if (!budgetsAsync.hasValue) {
+      content = budgetsAsync.hasError
+          ? const Text(
+              'Could not load your budget.',
+              style: TextStyle(color: Colors.black54),
+            )
+          : const Padding(
+              padding: EdgeInsets.symmetric(vertical: 8),
+              child: LinearProgressIndicator(),
+            );
+    } else if (overall == null) {
+      content = Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Set a monthly budget to see how much you have left to spend.',
+            style: TextStyle(fontSize: 12, color: Colors.black54),
+          ),
+          const SizedBox(height: 12),
+          OutlinedButton.icon(
+            onPressed: edit,
+            icon: const Icon(Icons.add, size: 18),
+            label: const Text('Set monthly budget'),
+          ),
+        ],
+      );
+    } else {
+      final ratio = spent / overall.amount;
+      final color = budgetColor(ratio);
+      final diff = (overall.amount - spent).abs();
+
+      content = Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: LinearProgressIndicator(
+              value: ratio.clamp(0.0, 1.0),
+              minHeight: 8,
+              color: color,
+              backgroundColor: Colors.black12,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '${_money.format(spent)} of ${_money.format(overall.amount)} spent '
+            '(${(ratio * 100).round()}%)',
+            style: const TextStyle(fontSize: 12, color: Colors.black54),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            ratio > 1
+                ? '${_money.format(diff)} over budget'
+                : '${_money.format(diff)} left this month',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: color,
+            ),
+          ),
+        ],
+      );
+    }
 
     return _Card(
       child: Column(
@@ -395,25 +452,38 @@ class _BudgetCard extends StatelessWidget {
                 style: TextStyle(fontWeight: FontWeight.w700),
               ),
               const Spacer(),
-              const Icon(Icons.edit_outlined, size: 16, color: Colors.black38),
+              InkWell(
+                onTap: () => context.push('/budgets'),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: Text(
+                    'Categories',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                  ),
+                ),
+              ),
+              if (overall != null) ...[
+                const SizedBox(width: 12),
+                InkWell(
+                  onTap: edit,
+                  borderRadius: BorderRadius.circular(12),
+                  child: const Padding(
+                    padding: EdgeInsets.all(4),
+                    child: Icon(
+                      Icons.edit_outlined,
+                      size: 16,
+                      color: Colors.black38,
+                    ),
+                  ),
+                ),
+              ],
             ],
           ),
           const SizedBox(height: 12),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: LinearProgressIndicator(
-              value: ratio,
-              minHeight: 8,
-              color: color,
-              backgroundColor: Colors.black12,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            '${_money.format(spent)} of ${_money.format(budget)} spent '
-            '(${(ratio * 100).round()}%)',
-            style: const TextStyle(fontSize: 12, color: Colors.black54),
-          ),
+          content,
         ],
       ),
     );
@@ -421,11 +491,101 @@ class _BudgetCard extends StatelessWidget {
 }
 
 // ======================= EXPENSE BREAKDOWN =======================
-class _BreakdownCard extends StatelessWidget {
+/// Top [top] categories, with everything smaller grouped as "Other".
+List<CategorySpend> _topWithOther(List<CategorySpend> all, {int top = 5}) {
+  if (all.length <= top + 1) return all;
+  final head = all.take(top).toList();
+  final rest = all.skip(top).fold<double>(0, (s, c) => s + c.amount);
+  return [...head, CategorySpend('Other', rest, const Color(0xFF90A4AE))];
+}
+
+class _BreakdownCard extends ConsumerWidget {
   const _BreakdownCard();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final summary = ref.watch(monthSummaryProvider);
+    final items = _topWithOther(summary?.byCategory ?? const []);
+
+    Widget content;
+    if (summary == null) {
+      content = const Padding(
+        padding: EdgeInsets.symmetric(vertical: 32),
+        child: Center(child: CircularProgressIndicator()),
+      );
+    } else if (items.isEmpty) {
+      content = const Padding(
+        padding: EdgeInsets.symmetric(vertical: 16),
+        child: Text(
+          'No expenses yet this month.',
+          style: TextStyle(color: Colors.black54),
+        ),
+      );
+    } else {
+      content = Row(
+        children: [
+          SizedBox(
+            width: 130,
+            height: 130,
+            child: PieChart(
+              PieChartData(
+                sectionsSpace: 2,
+                centerSpaceRadius: 0,
+                sections: [
+                  for (final c in items)
+                    PieChartSectionData(
+                      value: c.amount,
+                      color: c.color,
+                      radius: 65,
+                      showTitle: false,
+                    ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(width: 20),
+          Expanded(
+            child: Column(
+              children: [
+                for (final c in items)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 3),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 8,
+                          height: 8,
+                          decoration: BoxDecoration(
+                            color: c.color,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            c.name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(fontSize: 12),
+                          ),
+                        ),
+                        Text(
+                          _money.format(c.amount),
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      );
+    }
+
     return _Card(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -435,66 +595,7 @@ class _BreakdownCard extends StatelessWidget {
             style: TextStyle(fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 16),
-          Row(
-            children: [
-              SizedBox(
-                width: 130,
-                height: 130,
-                child: PieChart(
-                  PieChartData(
-                    sectionsSpace: 2,
-                    centerSpaceRadius: 0,
-                    sections: [
-                      for (final c in _sampleCategories)
-                        PieChartSectionData(
-                          value: c.$2,
-                          color: c.$3,
-                          radius: 65,
-                          showTitle: false,
-                        ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(width: 20),
-              Expanded(
-                child: Column(
-                  children: [
-                    for (final c in _sampleCategories)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 3),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 8,
-                              height: 8,
-                              decoration: BoxDecoration(
-                                color: c.$3,
-                                shape: BoxShape.circle,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                c.$1,
-                                style: const TextStyle(fontSize: 12),
-                              ),
-                            ),
-                            Text(
-                              _money.format(c.$2),
-                              style: const TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-            ],
-          ),
+          content,
         ],
       ),
     );
