@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../assistant/assistant_screen.dart';
 import '../../core/nav.dart';
 import '../../core/theme.dart';
 import '../../core/ui_kit.dart';
@@ -66,7 +67,7 @@ class _AppShellState extends ConsumerState<AppShell> {
     final pages = <Widget>[
       const DashboardScreen(),
       const TransactionsScreen(),
-      const _AssistantSoon(),
+      const AssistantScreen(),
       const ProfileScreen(),
     ];
 
@@ -117,8 +118,10 @@ class _TabPageState extends State<_TabPage>
     duration: const Duration(milliseconds: 300),
     value: widget.active ? 1 : 0,
   );
-  late final Animation<double> _a =
-      CurvedAnimation(parent: _c, curve: Curves.easeOutCubic);
+  late final Animation<double> _a = CurvedAnimation(
+    parent: _c,
+    curve: Curves.easeOutCubic,
+  );
 
   @override
   void didUpdateWidget(covariant _TabPage old) {
@@ -430,10 +433,10 @@ class _AddSheet extends StatelessWidget {
 }
 
 BoxDecoration _tileDecoration(BuildContext context) => BoxDecoration(
-      color: context.cs.surfaceContainerHighest,
-      borderRadius: BorderRadius.circular(22),
-      border: Border.all(color: context.cs.outline),
-    );
+  color: context.cs.surfaceContainerHighest,
+  borderRadius: BorderRadius.circular(22),
+  border: Border.all(color: context.cs.outline),
+);
 
 class _BigTile extends StatelessWidget {
   const _BigTile({

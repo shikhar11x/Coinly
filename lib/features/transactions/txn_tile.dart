@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+
 import '../../core/format.dart';
 import '../../core/theme.dart';
 import '../../core/ui_helpers.dart';
 import 'txn_models.dart';
+import '../../core/ui_kit.dart';
 
 class TxnTile extends StatelessWidget {
   const TxnTile({super.key, required this.txn, this.onTap});
@@ -11,19 +13,20 @@ class TxnTile extends StatelessWidget {
   final VoidCallback? onTap;
 
   IconData? get _badge => switch (txn.inputMethod) {
-        'voice' => Icons.mic_none,
-        'receipt_scan' => Icons.document_scanner_outlined,
-        'sms' => Icons.sms_outlined,
-        _ => null,
-      };
+    'voice' => Icons.mic_none,
+    'receipt_scan' => Icons.document_scanner_outlined,
+    'sms' => Icons.sms_outlined,
+    _ => null,
+  };
 
   @override
   Widget build(BuildContext context) {
     final color = colorFromHex(txn.categoryColor);
     final isIncome = txn.type == TxnType.income;
     final hasDesc = txn.description?.trim().isNotEmpty ?? false;
-    final title =
-        hasDesc ? txn.description!.trim() : (txn.categoryName ?? 'Uncategorized');
+    final title = hasDesc
+        ? txn.description!.trim()
+        : (txn.categoryName ?? 'Uncategorized');
     final subtitle = [
       txn.categoryName ?? 'Uncategorized',
       if (txn.accountName != null) txn.accountName!,
@@ -62,7 +65,7 @@ class TxnTile extends StatelessWidget {
         '${isIncome ? '+' : '-'}${moneyExact.format(txn.amount)}',
         style: TextStyle(
           fontWeight: FontWeight.w700,
-          color: isIncome ? AppColors.green : AppColors.red,
+          color: isIncome ? context.incomeColor : AppColors.red,
         ),
       ),
     );
