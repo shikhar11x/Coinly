@@ -43,6 +43,7 @@ dependencies:
   image_picker: ^1.2.3
   speech_to_text: ^7.5.0
   google_fonts: ^9.0.0
+  shared_preferences: ^2.5.5
 
 dev_dependencies:
   flutter_test:

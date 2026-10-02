@@ -78,9 +78,11 @@ ThemeData buildTheme(Brightness brightness) {
   final border = isDark ? AppColors.darkBorder : AppColors.border;
   final hint = isDark ? AppColors.darkTextMuted : AppColors.textMuted;
 
-  // ---------- Typography: Plus Jakarta Sans ----------
+  // ---------- Typography ----------
+  // To use Plus Jakarta Sans later: add `import 'package:google_fonts/google_fonts.dart';`
+  // and replace `base.apply(` below with `GoogleFonts.plusJakartaSansTextTheme(base).apply(`.
   final base = ThemeData(brightness: brightness, useMaterial3: true).textTheme;
-    var text = base.apply(
+  var text = base.apply(
     bodyColor: scheme.onSurface,
     displayColor: scheme.onSurface,
   );
@@ -118,17 +120,6 @@ ThemeData buildTheme(Brightness brightness) {
     scaffoldBackgroundColor: isDark ? AppColors.dark : AppColors.bg,
     canvasColor: isDark ? AppColors.dark : AppColors.bg,
     textTheme: text,
-
-    // Smooth slide transition on every platform (incl. Chrome on Windows).
-    // pageTransitionsTheme: const PageTransitionsTheme(
-    //   builders: {
-    //     TargetPlatform.android: CupertinoPageTransitionsBuilder(),
-    //     TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
-    //     TargetPlatform.windows: CupertinoPageTransitionsBuilder(),
-    //     TargetPlatform.macOS: CupertinoPageTransitionsBuilder(),
-    //     TargetPlatform.linux: CupertinoPageTransitionsBuilder(),
-    //   },
-    // ),
 
     appBarTheme: AppBarTheme(
       backgroundColor: Colors.transparent,
