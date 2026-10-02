@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/theme.dart';
 
 enum AccountType {
   cash,
@@ -22,12 +23,29 @@ enum AccountType {
         AccountType.wallet => 'Wallet / UPI',
       };
 
+  /// Short name for tiles.
+  String get short => switch (this) {
+        AccountType.cash => 'Cash',
+        AccountType.bank => 'Bank',
+        AccountType.creditCard => 'Card',
+        AccountType.savings => 'Savings',
+        AccountType.wallet => 'Wallet',
+      };
+
   IconData get icon => switch (this) {
         AccountType.cash => Icons.payments_outlined,
         AccountType.bank => Icons.account_balance,
         AccountType.creditCard => Icons.credit_card,
         AccountType.savings => Icons.savings_outlined,
         AccountType.wallet => Icons.account_balance_wallet_outlined,
+      };
+
+  Color get color => switch (this) {
+        AccountType.cash => AppColors.green,
+        AccountType.bank => AppColors.blue,
+        AccountType.creditCard => AppColors.purple,
+        AccountType.savings => AppColors.orange,
+        AccountType.wallet => const Color(0xFF26A69A),
       };
 }
 

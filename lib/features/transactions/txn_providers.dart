@@ -8,7 +8,7 @@ import '../auth/auth_providers.dart';
 import 'txn_models.dart';
 
 // "Give me the transaction, plus its category and account details."
-const _select = '*, categories(name, icon, color), accounts(name)';
+const _select = '*, categories(name, icon, color, type), accounts(name)';
 
 final categoriesProvider = FutureProvider<List<TxnCategory>>((ref) async {
   ref.watch(authStateProvider);
@@ -33,21 +33,69 @@ final transactionsProvider = FutureProvider<List<Txn>>((ref) async {
   return rows.map(Txn.fromMap).toList();
 });
 
-/// Every transaction since the 1st of the current month.
-final monthTxnsProvider = FutureProvider<List<Txn>>((ref) async {
+// ============================================================
+// Month selection (dashboard month switcher)
+// ============================================================
+
+bool isCurrentMonth(DateTime m) {
+  final n = DateTime.now();
+  return m.year == n.year && m.month == n.month;
+}
+
+/// Days to divide by for "daily average": today's date for the current
+/// month, the full length for past months.
+int daysInView(DateTime m) {
+  if (isCurrentMonth(m)) return DateTime.now().day;
+  return DateTime(m.year, m.month + 1, 0).day;
+}
+
+/// The first day of the month the dashboard is showing.
+class SelectedMonth extends Notifier<DateTime> {
+  @override
+  DateTime build() {
+    final n = DateTime.now();
+    return DateTime(n.year, n.month);
+  }
+
+  void previous() => state = DateTime(state.year, state.month - 1);
+
+  void next() {
+    if (isCurrentMonth(state)) return; // can't go into the future
+    state = DateTime(state.year, state.month + 1);
+  }
+
+  void reset() {
+    final n = DateTime.now();
+    state = DateTime(n.year, n.month);
+  }
+}
+
+final selectedMonthProvider =
+    NotifierProvider<SelectedMonth, DateTime>(SelectedMonth.new);
+
+/// Every transaction in one month. One cached entry per month.
+final monthTxnsProvider =
+    FutureProvider.family<List<Txn>, DateTime>((ref, month) async {
   ref.watch(authStateProvider);
   final c = ref.watch(supabaseProvider);
   if (c.auth.currentUser == null) return [];
 
-  final now = DateTime.now();
-  final start = DateTime(now.year, now.month, 1);
+  final start = DateTime(month.year, month.month, 1);
+  final end = DateTime(month.year, month.month + 1, 1);
 
   final rows = await c
       .from('transactions')
       .select(_select)
       .gte('date', start.toUtc().toIso8601String())
+      .lt('date', end.toUtc().toIso8601String())
       .order('date', ascending: false);
   return rows.map(Txn.fromMap).toList();
+});
+
+/// The transactions of whichever month is currently selected.
+final selectedMonthTxnsProvider = Provider<AsyncValue<List<Txn>>>((ref) {
+  final month = ref.watch(selectedMonthProvider);
+  return ref.watch(monthTxnsProvider(month));
 });
 
 class CategorySpend {
@@ -65,11 +113,13 @@ class MonthSummary {
   });
   final double income;
   final double expense;
-  final List<CategorySpend> byCategory; // biggest first (used in Step 6)
+  final List<CategorySpend> byCategory; // biggest first
 }
 
+/// Income, spending and per-category totals for the selected month.
+/// null while that month is loading (or failed to load).
 final monthSummaryProvider = Provider<MonthSummary?>((ref) {
-  final list = ref.watch(monthTxnsProvider).value;
+  final list = ref.watch(selectedMonthTxnsProvider).value;
   if (list == null) return null;
 
   double income = 0;
@@ -96,6 +146,10 @@ final monthSummaryProvider = Provider<MonthSummary?>((ref) {
   return MonthSummary(income: income, expense: expense, byCategory: sorted);
 });
 
+// ============================================================
+// Writes
+// ============================================================
+
 final txnRepoProvider = Provider<TxnRepo>((ref) => TxnRepo(ref));
 
 class TxnRepo {
@@ -106,7 +160,7 @@ class TxnRepo {
 
   void _refresh() {
     _ref.invalidate(transactionsProvider);
-    _ref.invalidate(monthTxnsProvider);
+    _ref.invalidate(monthTxnsProvider); // every cached month
     _ref.invalidate(accountsProvider); // the DB trigger changed balances
   }
 

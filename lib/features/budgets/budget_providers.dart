@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart' show Color;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+
 import '../../core/supabase.dart';
 import '../../core/theme.dart';
 import '../auth/auth_providers.dart';
@@ -19,10 +20,10 @@ class Budget {
   final double amount;
 
   factory Budget.fromMap(Map<String, dynamic> m) => Budget(
-        id: m['id'] as String,
-        categoryId: m['category_id'] as String?,
-        amount: (m['amount'] as num).toDouble(),
-      );
+    id: m['id'] as String,
+    categoryId: m['category_id'] as String?,
+    amount: (m['amount'] as num).toDouble(),
+  );
 }
 
 final budgetsProvider = FutureProvider<List<Budget>>((ref) async {
@@ -46,7 +47,7 @@ final overallBudgetProvider = Provider<Budget?>((ref) {
 
 /// This month's expense total per category id.
 final spendByCategoryIdProvider = Provider<Map<String, double>>((ref) {
-  final list = ref.watch(monthTxnsProvider).value ?? const <Txn>[];
+  final list = ref.watch(selectedMonthTxnsProvider).value ?? const <Txn>[];
   final map = <String, double>{};
   for (final t in list) {
     if (t.type != TxnType.expense || t.categoryId == null) continue;
@@ -86,7 +87,8 @@ class BudgetRepo {
     } else {
       await _c
           .from('budgets')
-          .update({'amount': amount}).eq('id', existing['id'] as String);
+          .update({'amount': amount})
+          .eq('id', existing['id'] as String);
     }
     _ref.invalidate(budgetsProvider);
   }
