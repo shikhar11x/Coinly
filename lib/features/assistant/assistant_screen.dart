@@ -1,42 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
-import '../../core/nav.dart';
 import '../../core/theme.dart';
 import '../../core/ui_kit.dart';
+import 'chat_controller.dart';
 
 /// Content never gets wider than this (tablets / Chrome).
 const double _maxW = 560;
 
-const _samples = [
-  (
-    'How much did I spend on food this month?',
-    Icons.restaurant_rounded,
-    AppColors.red,
-  ),
-  (
-    'Am I on track with my budget?',
-    Icons.track_changes_rounded,
-    AppColors.green,
-  ),
-  (
-    'What was my biggest expense this week?',
-    Icons.trending_up_rounded,
-    AppColors.orange,
-  ),
-  (
-    'Compare this month with last month',
-    Icons.compare_arrows_rounded,
-    AppColors.blue,
-  ),
-];
-
 class AssistantScreen extends ConsumerWidget {
   const AssistantScreen({super.key});
 
+  void _open(BuildContext context, [String? question]) {
+    HapticFeedback.selectionClick();
+    context.push('/assistant', extra: question);
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final chat = ref.watch(chatProvider);
+    final last = chat.messages.isEmpty ? null : chat.messages.last;
+
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: context.isDark
           ? SystemUiOverlayStyle.light
@@ -51,33 +37,9 @@ class AssistantScreen extends ConsumerWidget {
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 130),
                 children: [
-                  // ---------- Title ----------
                   Padding(
                     padding: const EdgeInsets.fromLTRB(4, 0, 4, 16),
-                    child: Row(
-                      children: [
-                        Text('AI assistant', style: context.tt.headlineLarge),
-                        const SizedBox(width: 10),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 5,
-                          ),
-                          decoration: BoxDecoration(
-                            color: context.cs.primaryContainer,
-                            borderRadius: BorderRadius.circular(999),
-                          ),
-                          child: Text(
-                            'Soon',
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w800,
-                              color: context.cs.onPrimaryContainer,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
+                    child: Text('AI assistant', style: context.tt.headlineLarge),
                   ),
 
                   // ---------- Hero ----------
@@ -110,13 +72,58 @@ class AssistantScreen extends ConsumerWidget {
                                 ),
                                 const SizedBox(height: 10),
                                 const Text(
-                                  'Soon you can chat with Coinly about your '
-                                  'own spending and get answers from your '
-                                  'real transactions.',
+                                  'Coinly reads your own transactions, '
+                                  'budgets and accounts, and answers in '
+                                  'plain words.',
                                   style: TextStyle(
                                     color: Colors.white60,
                                     fontSize: 13.5,
                                     height: 1.45,
+                                  ),
+                                ),
+                                const SizedBox(height: 18),
+                                Pressable(
+                                  onTap: () => _open(context),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                      vertical: 14,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withValues(
+                                        alpha: 0.09,
+                                      ),
+                                      borderRadius: BorderRadius.circular(18),
+                                      border: Border.all(
+                                        color: Colors.white.withValues(
+                                          alpha: 0.12,
+                                        ),
+                                      ),
+                                    ),
+                                    child: const Row(
+                                      children: [
+                                        Icon(
+                                          Icons.chat_bubble_outline_rounded,
+                                          color: Colors.white70,
+                                          size: 20,
+                                        ),
+                                        SizedBox(width: 12),
+                                        Expanded(
+                                          child: Text(
+                                            'Ask anything about your spending…',
+                                            style: TextStyle(
+                                              color: Colors.white70,
+                                              fontSize: 14,
+                                            ),
+                                          ),
+                                        ),
+                                        Icon(
+                                          Icons.arrow_forward_rounded,
+                                          color: AppColors.green,
+                                          size: 20,
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 ),
                               ],
@@ -127,12 +134,58 @@ class AssistantScreen extends ConsumerWidget {
                     ),
                   ),
 
-                  // ---------- Sample questions ----------
+                  // ---------- Continue ----------
+                  if (last != null) ...[
+                    const SizedBox(height: 16),
+                    FadeSlideIn(
+                      child: AppCard(
+                        padding: const EdgeInsets.all(14),
+                        onTap: () => _open(context),
+                        child: Row(
+                          children: [
+                            const IconBadge(
+                              icon: Icons.forum_outlined,
+                              color: AppColors.blue,
+                              size: 42,
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Continue conversation',
+                                    style: context.tt.titleSmall,
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    last.text,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      fontSize: 12.5,
+                                      color: context.muted,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Icon(
+                              Icons.chevron_right_rounded,
+                              color: context.muted,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+
+                  // ---------- Suggestions ----------
                   const SizedBox(height: 24),
                   Padding(
                     padding: const EdgeInsets.only(left: 4),
                     child: Text(
-                      'YOU WILL BE ABLE TO ASK',
+                      'TRY ASKING',
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
@@ -142,38 +195,29 @@ class AssistantScreen extends ConsumerWidget {
                     ),
                   ),
                   const SizedBox(height: 10),
-                  for (var i = 0; i < _samples.length; i++)
+                  for (var i = 0; i < kAssistantSuggestions.length; i++)
                     Padding(
                       padding: const EdgeInsets.only(bottom: 10),
                       child: FadeSlideIn(
-                        delay: Duration(milliseconds: 80 + 60 * i),
+                        delay: Duration(milliseconds: 80 + 50 * i),
                         child: AppCard(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 14,
                             vertical: 12,
                           ),
-                          onTap: () {
-                            HapticFeedback.selectionClick();
-                            ScaffoldMessenger.of(context)
-                              ..hideCurrentSnackBar()
-                              ..showSnackBar(
-                                const SnackBar(
-                                  content:
-                                      Text('The assistant is coming soon.'),
-                                ),
-                              );
-                          },
+                          onTap: () =>
+                              _open(context, kAssistantSuggestions[i].$1),
                           child: Row(
                             children: [
                               IconBadge(
-                                icon: _samples[i].$2,
-                                color: _samples[i].$3,
+                                icon: kAssistantSuggestions[i].$2,
+                                color: kAssistantSuggestions[i].$3,
                                 size: 40,
                               ),
                               const SizedBox(width: 12),
                               Expanded(
                                 child: Text(
-                                  _samples[i].$1,
+                                  kAssistantSuggestions[i].$1,
                                   style: const TextStyle(
                                     fontSize: 13.5,
                                     fontWeight: FontWeight.w600,
@@ -187,35 +231,37 @@ class AssistantScreen extends ConsumerWidget {
                       ),
                     ),
 
-                  // ---------- Meanwhile ----------
-                  const SizedBox(height: 14),
-                  FadeSlideIn(
-                    delay: const Duration(milliseconds: 360),
-                    child: AppCard(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('Meanwhile', style: context.tt.titleSmall),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Your dashboard already shows your daily average, '
-                            'top category and budget.',
+                  // ---------- Info ----------
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: context.cs.primaryContainer,
+                      borderRadius: BorderRadius.circular(18),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(
+                          Icons.info_outline_rounded,
+                          size: 18,
+                          color: context.cs.onPrimaryContainer,
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            'Each question uses one of your daily AI actions '
+                            '(receipts, voice and chat share them). Your '
+                            'data is sent to Google Gemini to answer.',
                             style: TextStyle(
-                              fontSize: 12.5,
+                              fontSize: 12,
                               height: 1.4,
-                              color: context.muted,
+                              fontWeight: FontWeight.w600,
+                              color: context.cs.onPrimaryContainer,
                             ),
                           ),
-                          const SizedBox(height: 12),
-                          OutlinedButton.icon(
-                            onPressed: () =>
-                                ref.read(tabIndexProvider.notifier).set(0),
-                            icon: const Icon(Icons.home_outlined, size: 18),
-                            label: const Text('Open dashboard'),
-                          ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   ),
                 ],

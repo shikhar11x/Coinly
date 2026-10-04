@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'supabase.dart';
+import '../features/assistant/chat_screen.dart';
 import '../features/accounts/accounts_screen.dart';
 import '../features/auth/auth_screen.dart';
 import '../features/budgets/budgets_screen.dart';
@@ -64,6 +65,12 @@ final routerProvider = Provider<GoRouter>((ref) {
             draft: extra is TxnDraft ? extra : null,
           );
         },
+      ),
+            GoRoute(
+        path: '/assistant',
+        builder: (context, state) => ChatScreen(
+          initialQuestion: state.extra is String ? state.extra as String : null,
+        ),
       ),
     ],
   );
