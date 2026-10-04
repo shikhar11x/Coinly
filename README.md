@@ -1,19 +1,23 @@
-# Exepse
+# Coinly
 
-A modern expense tracker built with Flutter, featuring AI-powered receipt scanning and voice expense logging.
-
-<p align="center">
-  <img src="poster.png" alt="Exepse - Expense Tracker" width="100%">
-</p>
+> A smart expense tracker built with Flutter, powered by AI-powered receipt scanning and voice expense logging.
 
 ## Features
 
-- AI Receipt Scanning
-- Voice Expense Logging
-- Smart Expense Categorization
-- Income & Expense Tracking
-- Budget Management
-- Spending Insights
-- Dark & Light Mode
-- Multiple Accounts
+- AI-powered receipt scanning
+- Voice expense logging
+- Smart expense categorization
+- Income & expense tracking
+- Budget management
+- Spending insights
+- Multiple account support
+- Dark & Light theme
 - Built with Flutter
+
+## Tech Stack
+
+- Flutter
+- Dart
+- AI Integration
+- Voice Recognition
+- Receipt Scanning
