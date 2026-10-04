@@ -34,12 +34,21 @@ class AssistantService {
   AssistantService(this._client);
   final SupabaseClient _client;
 
-  String _errorFrom(FunctionException e) {
+    String _errorFrom(FunctionException e) {
     final d = e.details;
     if (d is Map && d['error'] is String) return d['error'] as String;
     if (e.status == 401) return 'Please log in again and retry.';
     if (e.status == 404) return 'The assistant is not deployed yet.';
-    return 'The assistant had a problem. Try again.';
+
+    // Show what the server said, so problems are easy to find.
+    final detail = switch (d) {
+      Map m => (m['message'] ?? m['code'] ?? '').toString(),
+      String s => s,
+      _ => '',
+    };
+    final short = detail.length > 120 ? '${detail.substring(0, 120)}…' : detail;
+    return 'The assistant had a problem '
+        '(error ${e.status}${short.isEmpty ? '' : ': $short'}). Try again.';
   }
 
   Future<AssistantReply> ask(
