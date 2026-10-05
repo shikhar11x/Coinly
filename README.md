@@ -1,8 +1,6 @@
 <div align="center">
 
 # Coinly
-## 📸 App Preview
-
 <p align="center">
   <img src="docs/screenshots/coinly.png" alt="Coinly App Preview" width="900"/>
 </p>
