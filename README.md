@@ -1,7 +1,11 @@
 <div align="center">
 
 # Coinly
+## 📸 App Preview
 
+<p align="center">
+  <img src="docs/screenshots/coinly.png" alt="Coinly App Preview" width="900"/>
+</p>
 **An AI-powered personal finance tracker built with Flutter and Supabase.**
 
 Scan receipts, log expenses by voice, track budgets across multiple accounts, and ask questions about your own money in plain English, Hindi or Hinglish.
