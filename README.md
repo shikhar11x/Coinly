@@ -40,13 +40,9 @@ Scan receipts, log expenses by voice, track budgets across multiple accounts, an
 
 ## Screenshots
 
-| Dashboard | Activity | Add transaction |
+| Dashboard | Activity | Dark mode |
 | :---: | :---: | :---: |
-| ![Dashboard](docs/screenshots/dashboard.png) | ![Activity](docs/screenshots/activity.png) | ![Add transaction](docs/screenshots/add.png) |
-
-| AI assistant | Budgets | Dark mode |
-| :---: | :---: | :---: |
-| ![Assistant](docs/screenshots/assistant.png) | ![Budgets](docs/screenshots/budgets.png) | ![Dark mode](docs/screenshots/dark.png) |
+| ![Dashboard](docs/screenshots/dashboard.png) | ![Activity](docs/screenshots/activity.png) | ![Dark mode](docs/screenshots/dark.png) |
 
 ---
 
@@ -215,7 +211,7 @@ supabase/
 ### 1. Clone and install
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/coinly.git
+git clone https://github.com/shikhar11x/coinly.git
 cd coinly
 flutter pub get
 ```
