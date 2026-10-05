@@ -42,7 +42,7 @@ Scan receipts, log expenses by voice, track budgets across multiple accounts, an
 
 | Dashboard | Activity | Dark mode |
 | :---: | :---: | :---: |
-| ![Dashboard](docs/screenshots/dashboard.png) | ![Activity](docs/screenshots/activity.png) | ![Dark mode](docs/screenshots/dark.png) |
+| ![Dashboard](docs/screenshots/dashboard.png) | ![Activity](docs/screenshots/Activity.png) | ![Dark mode](docs/screenshots/Dark.png) |
 
 ---
 
